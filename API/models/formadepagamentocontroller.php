@@ -15,7 +15,7 @@ if($requestData['operacao'] == 'create'){
         try{
             
             // gerar a querie de insersao no banco de dados 
-            $sql = "INSERT INTO ACESSO (NOME) VALUES (?)"; // colocar ? para deixar mais seguro
+            $sql = "INSERT INTO FPAGAMENTO (NOME) VALUES (?)"; // colocar ? para deixar mais seguro
             // preparar a querie para gerar objetos de insersao no banco de dados
         
             $stmt = $pdo->prepare($sql); // atribuindo para ver se existe
@@ -51,7 +51,7 @@ if($requestData['operacao'] == 'read'){
     $colunas = $requestData['columns'];
     // Preparar o SQL de consulta ao banco de dados
 
-    $sql = "SELECT * FROM ACESSO WHERE 1=1";
+    $sql = "SELECT * FROM FPAGAMENTO WHERE 1=1";
 
     // Obter o total de registros cadastrados
     $resultado = $pdo->query($sql);
@@ -111,7 +111,7 @@ if($requestData['operacao'] == 'update'){
     else {    
     try{
   
-        $sql = "UPDATE ACESSO SET NOME = ? WHERE ID = ?";
+        $sql = "UPDATE FPAGAMENTO SET NOME = ? WHERE ID = ?";
         // preparar a querie para gerar objetos de insersao no banco de dados
     
         $stmt = $pdo->prepare($sql); // atribuindo para ver se existe
@@ -149,7 +149,7 @@ if($requestData['operacao'] == 'delete'){
 
         
         // gerar a querie de insersao no banco de dados 
-        $sql = "DELETE FROM ACESSO WHERE ID = ?";
+        $sql = "DELETE FROM FPAGAMENTO WHERE ID = ?";
         // preparar a querie para gerar objetos de insersao no banco de dados
     
         $stmt = $pdo->prepare($sql); // atribuindo para ver se existe

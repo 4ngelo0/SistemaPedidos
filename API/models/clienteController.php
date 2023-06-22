@@ -1,133 +1,187 @@
 <?php
 
-include ('../conexao/conn.php');
+include('../conexao/conn.php');
 
 $requestData = $_REQUEST;
 
 if($requestData['operacao'] == 'create'){
-    try{
-    $sql = "INSERT INTO CLIENTE (NOME) VALUES (?)"; 
-    $stmt = $pdo->prepare($sql); 
+    if(empty($_REQUEST['NOME'])){
+        $dados = array(
+            "type" => 'error',
+            "mensagem" => 'Existe(m) campo(s) obrigatório(s) não preenchido(s).'
+        );
+    }
+    else { 
+        try{
+            
+            // gerar a querie de insersao no banco de dados 
+            $sql = "INSERT INTO CLIENTE (NOME) VALUES (?)"; // colocar ? para deixar mais seguro
+            // preparar a querie para gerar objetos de insersao no banco de dados
+        
+            $stmt = $pdo->prepare($sql); // atribuindo para ver se existe
+        
+            // se existir requerir os valores
+            $stmt->execute([
+                $requestData['NOME']
+            ]);
+        
+            // tranforma os dados em um array
+            $dados = array(
+                'type' => 'success',
+                'mensagem' => 'Registro salvo com sucesso!'
+            );
+            // se nao existir mostrar erro
+        }catch (PDOException $e){
+            $dados = array(
+                'type' => 'error',
+                'mensagem' => 'Erro ao salvar o registro:' .$e
+            );
+        }
+    }
 
-    $stmt->execute([
-        $requestData['NOME'],
-    ]);
+    echo json_encode($dados);
 
-    $dados = array(
-        'type' => 'success',
-        'mensagem' => 'Registro salvo com sucesso!'
-    );
-}catch (PDOExeception $e){
-    $dados = array(
-        'type' => 'error',
-        'mensagem' => 'Erro ao salvar o registro:' .$e
-    );
+
 }
-
-echo json_encode($dados);
-}
-
 if($requestData['operacao'] == 'read'){
-
-    //obter o numero de colunas vindas do front-end
-    $colunas = $requestData['columns'];
-
-    //prepara o sql de consulta ao banco
-    $sql = "SELECT * FROM CLIENTES WHERE 1=1";
-
-    // total de registros cadastrados
+    $colunas = $requestData['columns']; //Obter as colunas vindas do resquest
+    //Preparar o comando sql para obter os dados da categoria
+    $sql = "SELECT * FROM CLIENTE WHERE 1=1 ";
+    //Obter o total de registros cadastrados
     $resultado = $pdo->query($sql);
     $qtdeLinhas = $resultado->rowCount();
-    
-    //verificando se tem algum filtro
+    //Verificando se há filtro determinado
     $filtro = $requestData['search']['value'];
-    if(isset($filtro)){
+    if( !empty( $filtro ) ){
+        //Montar a expressão lógica que irá compor os filtros
+        //Aqui você deverá determinar quais colunas farão parte do filtro
         $sql .= " AND (ID LIKE '$filtro%' ";
-        $sql .= " OR NOME LIKE '%$filtro%' )";
+        $sql .= " OR NOME_RAZAO LIKE '$filtro%') ";
     }
-
-    // total de registros filtrados 
+    //Obter o total dos dados filtrados
     $resultado = $pdo->query($sql);
     $totalFiltrados = $resultado->rowCount();
-    
-    //obter valores para gerar ordenação
-    $colunaOrdem = $requestData['order'][0]['column']; //posição da colunas
-    $ordem = $colunas[$colunasOrdem]['date']; //nome da primeira colunas
-    $direcao = $requestData['order'][0]['dir']; //direção colunas
-
-    //obter valores para o limite
-    $inicio = $requestData['start'];
-    $tamanho = $requestData['length'];  
-
-    //realizar ordenação com limite imposto 
-    $sql .= "ORDER BY $ordem $direcao LIMIT $inicio $tamanho";
-
+    //Obter valores para ORDER BY      
+    $colunaOrdem = $requestData['order'][0]['column']; //Obtém a posição da coluna na ordenação
+    $ordem = $colunas[$colunaOrdem]['data']; //Obtém o nome da coluna para a ordenação
+    $direcao = $requestData['order'][0]['dir']; //Obtém a direção da ordenação
+    //Obter valores para o LIMIT
+    $inicio = $requestData['start']; //Obtém o ínicio do limite
+    $tamanho = $requestData['length']; //Obtém o tamanho do limite
+    //Realizar o ORDER BY com LIMIT
+    $sql .= " ORDER BY $ordem $direcao LIMIT $inicio, $tamanho ";
     $resultado = $pdo->query($sql);
-    $dados = array();
+    $resultData = array();
     while($row = $resultado->fetch(PDO::FETCH_ASSOC)){
-        $dados[] = array_map(null, $row);
+        $resultData[] = array_map('utf8_encode', $row);
     }
-
-    //criar um objeto retorno do tipo datatable
-    $json_data = array(
+    //Monta o objeto json para retornar ao DataTable
+    $dados = array(
         "draw" => intval($requestData['draw']),
-        "recordsTotal" => intval($requestData['qtdeLinhas']),
-        "records" => intval($requestData['totalFiltrados']),
-        "data" => $dados
+        "recordsTotal" => intval($qtdeLinhas),
+        "recordsFiltered" => intval($totalFiltrados),
+        "data" => $resultData
     );
+    echo json_encode($dados);
 }
 
-if($requestData['operacao'] == 'update'){
 
+
+
+if($requestData['operacao'] == 'update'){
+    
+    if(empty($_REQUEST['NOME'])){
+        $dados = array(
+            "type" => 'error',
+            "mensagem" => 'Existe(m) campo(s) obrigatório(s) não preenchido(s).'
+        );
+    }
+    else {    
     try{
-        $sql = "UPDATE CLIENTE SET NOME = ? WHERE ID = ?"; 
+        $sql = "UPDATE CLIENTE SET NOME = ? WHERE ID = ?";
+        // preparar a querie para gerar objetos de insersao no banco de dados
     
-        $stmt = $pdo->prepare($sql);
+        $stmt = $pdo->prepare($sql); // atribuindo para ver se existe
     
+        // se existir requerir os valores
         $stmt->execute([
             $requestData['NOME'],
             $requestData['ID']
         ]);
+        
     
+        // tranforma os dados em um array
         $dados = array(
             'type' => 'success',
-            'mensagem' => 'Registro atualizado com sucesso!'
+            'mensagem' => 'Atualizado com sucesso!'
         );
-    
-    }catch (PDOExeception $e){
+        // se nao existir mostrar erro
+    }catch (PDOException $e){
         $dados = array(
             'type' => 'error',
-            'mensagem' => 'Erro ao atualizar o registro:' .$e
+            'mensagem' => 'Erro ao atualizar:' .$e
         );
+    }
     }
     
     echo json_encode($dados);
-    
+
+
+
 }
 
 if($requestData['operacao'] == 'delete'){
-
+    
     try{
-        $sql = "DELETE FROM CLIENTE WHERE ID = ?"; 
+
+        
+        // gerar a querie de insersao no banco de dados 
+        $sql = "DELETE FROM CLIENTE WHERE ID = ?";
+        // preparar a querie para gerar objetos de insersao no banco de dados
     
-        $stmt = $pdo->prepare($sql);
+        $stmt = $pdo->prepare($sql); // atribuindo para ver se existe
     
+        // se existir requerir os valores
         $stmt->execute([
-            $requestData['ID'],
+            $requestData['ID']
         ]);
     
+        // tranforma os dados em um array
         $dados = array(
             'type' => 'success',
-            'mensagem' => 'Registro deletado com sucesso!'
+            'mensagem' => 'Excluido com sucesso!'
         );
-    
-    }catch (PDOExeception $e){
+        // se nao existir mostrar erro
+    }catch (PDOException $e){
         $dados = array(
             'type' => 'error',
-            'mensagem' => 'Erro ao deletar o registro:' .$e
+            'mensagem' => 'Erro ao excluir o registro:' .$e
+        );
+    
+    }
+}
+
+if($requestData['operacao'] == 'view'){
+        // gerar a querie de insersao no banco de dados 
+        $sql = "SELECT * FROM CLIENTE WHERE ID = ".$requestData['ID']."";
+        $resultado = $pdo->query($sql);
+
+        if($resultado){
+            $result = array();
+            while($row = $resultado->fetch(PDO::FETCH_ASSOC)){
+                $result = array_map(null, $row);
+        }
+        $dados = array(
+            'type' => 'view',
+            'mensagem' => '',
+            'dados' => $result
+        );
+    } else {
+        $dados = array(
+            'type' => 'error',
+            'mensagem' => 'Erro ao visualizar o registro:!'.$e
         );
     }
     
     echo json_encode($dados);
-    
 }
